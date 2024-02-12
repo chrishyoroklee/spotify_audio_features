@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import os
 import base64
 from requests import post, get
@@ -10,7 +11,6 @@ def get_token(client_id, client_secret):
     auth_string = client_id + ":" + client_secret
     auth_bytes = auth_string.encode("utf-8")
     auth_base64 = str(base64.b64encode(auth_bytes), "utf-8")
-
     url = "https://accounts.spotify.com/api/token"
     headers = {
         "Authorization": "Basic " + auth_base64,
@@ -97,7 +97,16 @@ if st.button("Get Song Audio Features"):
             if track_id:
                 audio_features = get_audio_features(token, track_id)
                 if audio_features:
-                    st.json(audio_features)
+                    # Displaying a single track's features in a DataFrame
+                    df_single_track = pd.DataFrame([audio_features])
+                    st.dataframe(df_single_track)
+                    csv = df_single_track.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="Download audio features as CSV",
+                        data=csv,
+                        file_name='single_track_audio_features.csv',
+                        mime='text/csv',
+                    )
                 else:
                     st.error("Could not fetch audio features.")
             else:
@@ -117,15 +126,22 @@ if st.button("Get Playlist Audio Features", key="playlist_btn"):
             if playlist_id:
                 playlist_tracks = get_playlist_tracks(token, playlist_id)
                 if playlist_tracks:
-                    track_ids = [track['track']['id'] for track in playlist_tracks if track.get('track') and track['track'].get('id')]
+                    track_ids = [track['track']['id'] for track in playlist_tracks if track.get('track')]
                     if track_ids:
                         audio_features = get_audio_features_for_tracks(token, track_ids)
                         if audio_features:
-                            for features in audio_features:
-                                if features:  # Check if features were fetched successfully
-                                    st.json(features)
-                                else:
-                                    st.write("Some audio features could not be fetched.")
+                            # Organizing audio features into a DataFrame
+                            df_playlist = pd.DataFrame(audio_features)
+                            st.dataframe(df_playlist)
+                            csv = df_playlist.to_csv(index=False).encode('utf-8')
+                            st.download_button(
+                                label="Download playlist audio features as CSV",
+                                data=csv,
+                                file_name='playlist_audio_features.csv',
+                                mime='text/csv',
+                            )
+                        else:
+                            st.error("Audio features for some tracks could not be fetched.")
                     else:
                         st.error("No valid track IDs found in the playlist.")
                 else:
