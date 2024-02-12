@@ -78,10 +78,36 @@ def get_audio_features_for_tracks(token, track_ids):
         st.error(f"Error fetching audio features for tracks: {e}")
         return None
 
-# Streamlit UI for Playlist
-playlist_link = st.text_input("Enter Spotify playlist link")
+# Streamlit UI setup
+st.title("Spotify Audio Features Finder")
 
-if st.button("Get Playlist Audio Features"):
+# Inputs for Client ID and Client Secret
+client_id = st.text_input("Client ID")
+client_secret = st.text_input("Client Secret", type="password")
+
+# Option to enter a Spotify song link
+song_link = st.text_input("Enter Spotify song link")
+if st.button("Get Song Audio Features"):
+    if not client_id or not client_secret:
+        st.error("Please enter your Client ID and Client Secret.")
+    else:
+        token = get_token(client_id, client_secret)
+        if token:
+            track_id = extract_id(song_link, type="track")
+            if track_id:
+                audio_features = get_audio_features(token, track_id)
+                if audio_features:
+                    st.json(audio_features)
+                else:
+                    st.error("Could not fetch audio features.")
+            else:
+                st.error("Please enter a valid Spotify song link.")
+        else:
+            st.error("Invalid credentials. Please check your Client ID and Client Secret.")
+
+# Option to enter a Spotify playlist link
+playlist_link = st.text_input("Enter Spotify playlist link", key="playlist_input")
+if st.button("Get Playlist Audio Features", key="playlist_btn"):
     if not client_id or not client_secret:
         st.error("Please enter your Client ID and Client Secret.")
     else:
@@ -108,8 +134,3 @@ if st.button("Get Playlist Audio Features"):
                 st.error("Please enter a valid Spotify playlist link.")
         else:
             st.error("Invalid credentials. Please check your Client ID and Client Secret.")
-
-# Existing UI for single song
-if st.button("Get Track Audio Features"):
-    if not client_id or not client_secret:
-        st.error
